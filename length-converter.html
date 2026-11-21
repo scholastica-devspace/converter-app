@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f2ec">
+  <title>Length Converter</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202820;
+      --muted: #69736a;
+      --line: #e3e5dc;
+      --green: #285844;
+      --green-dark: #1f4936;
+      --surface: #fffefa;
+      --canvas: #f4f2ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 18px;
+      display: grid;
+      place-items: center;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(100%, 520px);
+      padding: clamp(24px, 6vw, 42px);
+      border: 1px solid #e9e8df;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: 0 18px 55px #29332712;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(30px, 7vw, 40px); line-height: 1.1; letter-spacing: -.04em; }
+    .intro { margin: 12px 0 30px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .field-label { display: block; margin-bottom: 9px; font-size: 14px; font-weight: 700; }
+    .entry {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 128px;
+      overflow: hidden;
+      border: 1.5px solid #cbd4ca;
+      border-radius: 14px;
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .entry:focus-within { border-color: var(--green); box-shadow: 0 0 0 4px #28584418; }
+    input, select { min-width: 0; height: 58px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+    input { padding: 0 16px; font-size: 22px; font-weight: 650; }
+    input::placeholder { color: #a6ada5; font-weight: 450; }
+    select { padding: 0 14px; border-left: 1px solid var(--line); font-size: 15px; font-weight: 700; cursor: pointer; }
+    .hint { min-height: 20px; margin: 8px 2px 24px; color: var(--muted); font-size: 12px; }
+    .direction { margin: 22px 0 12px; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    .results { display: grid; gap: 12px; }
+    .result {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 17px 18px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #fff;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .result.primary { border-color: var(--line); background: #fff; }
+    .result:hover { border-color: #9ab29d; }
+    .result:focus-visible { outline: 3px solid #28584455; outline-offset: 2px; }
+    .result.selected { border-color: var(--green); background: #e5f0e5; box-shadow: 0 0 0 3px #28584420; }
+    .result-label { color: var(--muted); font-size: 14px; font-weight: 650; }
+    .result-value { text-align: right; font-size: clamp(20px, 5vw, 25px); font-weight: 750; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+    .result-value small { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: 0; }
+    .footnote { margin: 20px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
+    @media (max-width: 380px) { main { padding: 23px 18px; } .entry { grid-template-columns: minmax(0, 1fr) 112px; } .result { padding: 15px 13px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Quick measurement tool</p>
+    <h1>Length converter</h1>
+    <p class="intro">Enter a metric measurement to see it in inches and feet.</p>
+
+    <label class="field-label" for="measurement">Measurement</label>
+    <div class="entry">
+      <input id="measurement" type="number" inputmode="decimal" min="0" step="any" placeholder="Type a number" aria-describedby="input-hint">
+      <select id="unit" aria-label="Measurement unit">
+        <option value="m">meters (m)</option>
+        <option value="cm" selected>centimeters (cm)</option>
+        <option value="mm">millimeters (mm)</option>
+        <option value="in">inches (in)</option>
+        <option value="ft">feet (ft)</option>
+      </select>
+    </div>
+    <p class="hint" id="input-hint">Choose a unit to convert from.</p>
+
+    <section class="results" aria-live="polite" aria-label="Converted measurements">
+      <p class="direction" id="direction">Converted to</p>
+      <button class="result primary copy-result" id="result-one" type="button" aria-label="Copy inches result">
+        <span class="result-label" id="label-one">Inches</span>
+        <span class="result-value" id="value-one">— <small>in</small></span>
+      </button>
+      <button class="result copy-result" id="result-two" type="button" aria-label="Copy feet result">
+        <span class="result-label" id="label-two">Feet</span>
+        <span class="result-value" id="value-two">— <small>ft</small></span>
+      </button>
+      <button class="result copy-result" id="result-three" type="button" aria-label="Copy millimeters result" hidden>
+        <span class="result-label" id="label-three">Millimeters</span>
+        <span class="result-value" id="value-three">— <small>mm</small></span>
+      </button>
+    </section>
+    <p class="footnote">Conversions are rounded for easy reading.</p>
+  </main>
+  <script>
+    const measurement = document.getElementById('measurement');
+    const unit = document.getElementById('unit');
+    const labelOne = document.getElementById('label-one');
+    const labelTwo = document.getElementById('label-two');
+    const labelThree = document.getElementById('label-three');
+    const valueOne = document.getElementById('value-one');
+    const valueTwo = document.getElementById('value-two');
+    const valueThree = document.getElementById('value-three');
+    const resultThree = document.getElementById('result-three');
+    const direction = document.getElementById('direction');
+    const hint = document.getElementById('input-hint');
+    const copyResults = document.querySelectorAll('.copy-result');
+    const factorsToMeters = { m: 1, cm: 0.01, mm: 0.001, in: 0.0254, ft: 0.3048 };
+    const unitNames = { m: ['Meters', 'm'], cm: ['Centimeters', 'cm'], mm: ['Millimeters', 'mm'], in: ['Inches', 'in'], ft: ['Feet', 'ft'] };
+
+    function pretty(value, places = 2) {
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: places }).format(value);
+    }
+
+    async function copyResult(button) {
+      const resultValue = button.querySelector('.result-value').textContent.trim();
+      if (!resultValue || resultValue.startsWith('—')) return;
+      try {
+        await navigator.clipboard.writeText(resultValue);
+      } catch {
+        const temporaryInput = document.createElement('textarea');
+        temporaryInput.value = resultValue;
+        temporaryInput.style.position = 'fixed';
+        temporaryInput.style.opacity = '0';
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+        document.execCommand('copy');
+        temporaryInput.remove();
+      }
+      copyResults.forEach(result => result.classList.toggle('selected', result === button));
+      hint.textContent = `Copied ${resultValue}`;
+    }
+
+    function convert() {
+      copyResults.forEach(result => result.classList.remove('selected'));
+      const raw = measurement.value.trim();
+      const source = unit.value;
+      const metricTargets = ['m', 'cm', 'mm'];
+      const targets = ['in', 'ft'].includes(source) ? metricTargets : ['in', 'ft'];
+      labelOne.textContent = unitNames[targets[0]][0];
+      labelTwo.textContent = unitNames[targets[1]][0];
+      resultThree.hidden = targets.length < 3;
+      if (targets.length === 3) labelThree.textContent = unitNames[targets[2]][0];
+      document.getElementById('result-one').setAttribute('aria-label', `Copy ${unitNames[targets[0]][0].toLowerCase()} result`);
+      document.getElementById('result-two').setAttribute('aria-label', `Copy ${unitNames[targets[1]][0].toLowerCase()} result`);
+      if (targets.length === 3) resultThree.setAttribute('aria-label', `Copy ${unitNames[targets[2]][0].toLowerCase()} result`);
+      valueOne.innerHTML = `— <small>${unitNames[targets[0]][1]}</small>`;
+      valueTwo.innerHTML = `— <small>${unitNames[targets[1]][1]}</small>`;
+      valueThree.innerHTML = targets.length === 3 ? `— <small>${unitNames[targets[2]][1]}</small>` : '';
+      direction.textContent = `Converted to ${targets.map(key => unitNames[key][0].toLowerCase()).join(' and ')}`;
+      if (!raw) {
+        hint.textContent = 'Choose a unit to convert from.';
+        return;
+      }
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value < 0) {
+        hint.textContent = 'Enter a number that is zero or greater.';
+        return;
+      }
+      const meters = value * factorsToMeters[source];
+      const values = { m: meters, cm: meters * 100, mm: meters * 1000, in: meters / 0.0254, ft: meters / 0.3048 };
+      valueOne.innerHTML = `${pretty(values[targets[0]])} <small>${unitNames[targets[0]][1]}</small>`;
+      valueTwo.innerHTML = `${pretty(values[targets[1]])} <small>${unitNames[targets[1]][1]}</small>`;
+      if (targets.length === 3) valueThree.innerHTML = `${pretty(values[targets[2]])} <small>${unitNames[targets[2]][1]}</small>`;
+      hint.textContent = `${pretty(value, 4)} ${unitNames[source][1]} converted.`;
+    }
+    measurement.addEventListener('input', convert);
+    unit.addEventListener('change', convert);
+    copyResults.forEach(button => button.addEventListener('click', () => copyResult(button)));
+  </script>
+</body>
+</html>

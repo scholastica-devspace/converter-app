@@ -64,6 +64,7 @@
     .direction { margin: 22px 0 12px; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .results { display: grid; gap: 12px; }
     .result {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -72,8 +73,16 @@
       border: 1px solid var(--line);
       border-radius: 15px;
       background: #fff;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, box-shadow .15s;
     }
-    .result.primary { border-color: #d6e3d8; background: #f2f7f1; }
+    .result.primary { border-color: var(--line); background: #fff; }
+    .result:hover { border-color: #9ab29d; }
+    .result:focus-visible { outline: 3px solid #28584455; outline-offset: 2px; }
+    .result.selected { border-color: var(--green); background: #e5f0e5; box-shadow: 0 0 0 3px #28584420; }
     .result-label { color: var(--muted); font-size: 14px; font-weight: 650; }
     .result-value { text-align: right; font-size: clamp(20px, 5vw, 25px); font-weight: 750; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
     .result-value small { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: 0; }
@@ -102,18 +111,18 @@
 
     <section class="results" aria-live="polite" aria-label="Converted measurements">
       <p class="direction" id="direction">Converted to</p>
-      <div class="result primary" id="result-one">
+      <button class="result primary copy-result" id="result-one" type="button" aria-label="Copy inches result">
         <span class="result-label" id="label-one">Inches</span>
         <span class="result-value" id="value-one">— <small>in</small></span>
-      </div>
-      <div class="result" id="result-two">
+      </button>
+      <button class="result copy-result" id="result-two" type="button" aria-label="Copy feet result">
         <span class="result-label" id="label-two">Feet</span>
         <span class="result-value" id="value-two">— <small>ft</small></span>
-      </div>
-      <div class="result" id="result-three" hidden>
+      </button>
+      <button class="result copy-result" id="result-three" type="button" aria-label="Copy millimeters result" hidden>
         <span class="result-label" id="label-three">Millimeters</span>
         <span class="result-value" id="value-three">— <small>mm</small></span>
-      </div>
+      </button>
     </section>
     <p class="footnote">Conversions are rounded for easy reading.</p>
   </main>
@@ -129,6 +138,7 @@
     const resultThree = document.getElementById('result-three');
     const direction = document.getElementById('direction');
     const hint = document.getElementById('input-hint');
+    const copyResults = document.querySelectorAll('.copy-result');
     const factorsToMeters = { m: 1, cm: 0.01, mm: 0.001, in: 0.0254, ft: 0.3048 };
     const unitNames = { m: ['Meters', 'm'], cm: ['Centimeters', 'cm'], mm: ['Millimeters', 'mm'], in: ['Inches', 'in'], ft: ['Feet', 'ft'] };
 
@@ -136,7 +146,27 @@
       return new Intl.NumberFormat(undefined, { maximumFractionDigits: places }).format(value);
     }
 
+    async function copyResult(button) {
+      const resultValue = button.querySelector('.result-value').textContent.trim();
+      if (!resultValue || resultValue.startsWith('—')) return;
+      try {
+        await navigator.clipboard.writeText(resultValue);
+      } catch {
+        const temporaryInput = document.createElement('textarea');
+        temporaryInput.value = resultValue;
+        temporaryInput.style.position = 'fixed';
+        temporaryInput.style.opacity = '0';
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+        document.execCommand('copy');
+        temporaryInput.remove();
+      }
+      copyResults.forEach(result => result.classList.toggle('selected', result === button));
+      hint.textContent = `Copied ${resultValue}`;
+    }
+
     function convert() {
+      copyResults.forEach(result => result.classList.remove('selected'));
       const raw = measurement.value.trim();
       const source = unit.value;
       const metricTargets = ['m', 'cm', 'mm'];
@@ -145,6 +175,9 @@
       labelTwo.textContent = unitNames[targets[1]][0];
       resultThree.hidden = targets.length < 3;
       if (targets.length === 3) labelThree.textContent = unitNames[targets[2]][0];
+      document.getElementById('result-one').setAttribute('aria-label', `Copy ${unitNames[targets[0]][0].toLowerCase()} result`);
+      document.getElementById('result-two').setAttribute('aria-label', `Copy ${unitNames[targets[1]][0].toLowerCase()} result`);
+      if (targets.length === 3) resultThree.setAttribute('aria-label', `Copy ${unitNames[targets[2]][0].toLowerCase()} result`);
       valueOne.innerHTML = `— <small>${unitNames[targets[0]][1]}</small>`;
       valueTwo.innerHTML = `— <small>${unitNames[targets[1]][1]}</small>`;
       valueThree.innerHTML = targets.length === 3 ? `— <small>${unitNames[targets[2]][1]}</small>` : '';
@@ -167,6 +200,7 @@
     }
     measurement.addEventListener('input', convert);
     unit.addEventListener('change', convert);
+    copyResults.forEach(button => button.addEventListener('click', () => copyResult(button)));
   </script>
 </body>
 </html>
